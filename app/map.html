@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+    .states {
+        stroke: #000;
+        fill-opacity: .7;
+    }
+
+    .symbol {
+        fill: steelblue;
+        fill-opacity: .8;
+        stroke: #fff;
+    }
+
+    .q0-9 { fill:rgb(247,251,255); }
+    .q1-9 { fill:rgb(222,235,247); }
+    .q2-9 { fill:rgb(198,219,239); }
+    .q3-9 { fill:rgb(158,202,225); }
+    .q4-9 { fill:rgb(107,174,214); }
+    .q5-9 { fill:rgb(66,146,198); }
+    .q6-9 { fill:rgb(33,113,181); }
+    .q7-9 { fill:rgb(8,81,156); }
+    .q8-9 { fill:rgb(8,48,107); }
+
+    #legend {
+    padding: 1.5em 0 0 1.5em;
+    }
+
+    li.key {
+        border-top-width: 15px;
+        border-top-style: solid;
+        font-size: .75em;
+        width: 10%;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+</style>
+<body>
+<table>
+    <tr><td id='toolbar'></td><td id='themap' rowspan='2'></td></tr>
+    <tr><td id='thelegend'></td></tr>
+</table>
+</body>
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/1.8.0/d3-legend.js"></script>
+
+<script src="http://code.jquery.com/jquery-latest.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+<script>
+
+var quantize = d3.scale.quantize()
+    .domain([0, 3])
+    .range(d3.range(9).map(function(i) { return "q" + i + "-9"; }));
+
+function componentToHex(c) {
+    var hex = c.toString(16);
+    return hex.length == 1 ? "0" + hex : hex;
+}
+
+function rgbToHex(r, g, b) {
+    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
+
+function quantize_number(v,max,min,steps){
+    return ((max-min)/steps*(v-min) + min)
+}
+
+var margin = {top: 20, right: 0, bottom: 20, left: 0};
+
+var width = 800 - margin.left - margin.right,
+    height = 670 - margin.top - margin.bottom;
+
+/////////////// LEGEND
+
+var svg = d3.select("#thelegend").append("svg");
+
+svg.append("g")
+    .attr("height", height + margin.top + margin.bottom)
+    .attr("class", "legendQuant")
+    .attr("transform", "translate(20,0)");
+
+var legend = d3.legend.color()
+  .labelFormat(d3.format(".2f"))
+  .useClass(true)
+  .scale(quantize);
+
+svg.select(".legendQuant")
+  .call(legend);
+
+
+////////////////////////////
+
+
+// var projection = d3.geo.mercator()
+//     // .mode("equidistant")
+//     .scale(150)
+//     .center([-74, 40.75]);
+//     .translate([width/2, heigh/2]);
+
+var projection = d3.geo.mercator()
+    .center([-74, 40.75])
+    .scale(250000)
+    .translate([width / 2, height / 2]);
+
+var path = d3.geo.path()
+    .projection(projection);
+
+
+
+
+var svg = d3.select("#themap").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+var hoods = svg.append("svg:g")
+    .attr("id", "states");
+
+var vectors = svg.append("svg:g")
+    .attr("id", "vectors");
+    
+var ports = svg.append("svg:g")
+    .attr("id", "ports");
+
+var texts = svg.append("svg:g")
+    .attr("id", "texts");
+
+
+
+
+var hoods_data;
+
+var currentday = 'Thu';
+
+
+
+
+function updateData(p,i){
+    // console.log(d,i);
+    // hoods.forEach(function(d) {
+    //     console.log(d);
+    // });
+    pickup_location = p.properties.name
+    console.log(names)
+    for (i=0;i<names.length;i++){
+        console.log(i)
+        
+        hoods.selectAll("path#"+names[i])
+                        .attr("class", function(d, i) {
+                            console.log()
+                            console.log(quantize(d.properties.data[pickup_location]))
+                            return quantize(Math.log10(d.properties.data[pickup_location]))
+                        });
+    }
+
+
+}
+
+var names = [];
+
+function loadMap(finished_loading){
+
+    console.log('loading map')
+
+    d3.json("via.json", function(collection) {
+        hoods_data = collection.features;
+
+        hoods.selectAll("path")
+        .data(collection.features)
+        .enter().append("svg:path")
+        .attr("d", path)
+        .attr('class','states')
+        .attr('stroke','#222222')
+        .attr("stroke-width", 2)
+        .attr("id",function(d,i) {
+            names.push(d.properties.name);
+            return d.properties.name;})
+        .on('click', function(d, i) {
+            updateData(d,i)
+        })          
+        .on('mouseover', function(d, i) {
+            var currentState = this;
+            d3.select(this).attr('stroke-width', 2);
+        })
+        .on('mouseout', function(d, i) {
+
+            d3.selectAll('path')
+                .attr("stroke-width", 1);
+                    // .style("stroke-width", 1);
+                    // .style({
+                    //     'fill-opacity':.7
+                    // });
+        });
+        ;
+        console.log('map loaded')
+    })
+
+    
+}
+
+$(document).ready(
+
+    loadMap(function(){
+        console.log('done loading')
+    })
+
+);
+
+    // var width = 960,
+    //         height = 500;
+
+    // var radius = d3.scale.sqrt()
+    //         .domain([0, 1e6])
+    //         .range([0, 10]);
+
+    // var path = d3.geo.path();
+
+    // var color = d3.scale.category20();
+
+    // var svg = d3.select("body").append("svg")
+    //         .attr("width", width)
+    //         .attr("height", height);
+
+    // queue()
+    //         .defer(d3.json, "us.json")
+    //         .defer(d3.json, "us-state-centroids.json")
+    //         .await(ready);
+
+    // function ready(error, us, centroid) {
+    //     var countries = topojson.feature(us, us.objects.states).features,
+    //             neighbors = topojson.neighbors(us.objects.states.geometries);
+
+    //     svg.selectAll("states")
+    //             .data(countries)
+    //             .enter().insert("path", ".graticule")
+    //             .attr("class", "states")
+    //             .attr("d", path)
+    //             .style("fill", function(d, i) { return color(d.color = d3.max(neighbors[i], function(n) { return countries[n].color; }) + 1 | 0); })
+    //             .on('mouseover', function(d, i) {
+
+    //             var currentState = this;
+    //             d3.select(this).style('fill-opacity', 1);
+    //             })
+    //             .on('mouseout', function(d, i) {
+
+    //                 d3.selectAll('path')
+    //                         .style({
+    //                             'fill-opacity':.7
+    //                         });
+    //             });
+    // }
+
+
+</script>
