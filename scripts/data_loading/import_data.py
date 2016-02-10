@@ -31,15 +31,14 @@ hoods = [r[4] for r in sf.records()]
 
 hood_borders = []
 print hoods
+
+### LOAD shapefile neighborhoods
 while True:
     try:
         s = sall.next()
-        # via_bb = ['%.3f' % coord for coord in s.bbox]
         via_bb = [[s.bbox[0],s.bbox[1]],[s.bbox[0],s.bbox[3]],[s.bbox[2],s.bbox[3]],[s.bbox[2],s.bbox[1]]]
-        # print via_bb
         hood_borders.append(list(s.points))
     except:
-        # print 'no'
         break
 
 n_hoods = len(hoods)
@@ -47,6 +46,9 @@ n_hoods = len(hoods)
 db = pymysql.connect("localhost","taxi","","nyctaxi",charset="utf8",cursorclass=pymysql.cursors.DictCursor)
 cursor = db.cursor()
 k = 0
+
+#### IMPORT
+
 for f in glob('/Volumes/GLYPH-500 GB/taxi/taxidata_via/trip_data*'):
 	with open(f,'rb') as c:
 		print f
@@ -54,7 +56,7 @@ for f in glob('/Volumes/GLYPH-500 GB/taxi/taxidata_via/trip_data*'):
 		creader.next()
 		for row in creader:
 
-			if row[10] == '0' or row[11] == '0' or row[12] == '0' or row[13] == '0':
+			if row[10] == '0' or row[11] == '0' or row[12] == '0' or row[13] == '0': # remove rows with missing data
 				continue
 
 			try:
@@ -65,6 +67,8 @@ for f in glob('/Volumes/GLYPH-500 GB/taxi/taxidata_via/trip_data*'):
 			except:
 				continue
 			flag = 0
+
+			#### Check if within via territory, assign neighborhood, and import to db
 
 			if dropoff_lng > -74.01934254624476 and dropoff_lng < -73.93505300005577 and dropoff_lat > 40.69977416538266 and dropoff_lat < 40.80335618764529:
 				if pickup_lng > -74.01934254624476 and pickup_lng < -73.93505300005577 and pickup_lat > 40.69977416538266 and pickup_lat < 40.80335618764529:
@@ -81,8 +85,6 @@ for f in glob('/Volumes/GLYPH-500 GB/taxi/taxidata_via/trip_data*'):
 									break
 						if flag == 1:
 							break
-			# data = list(row)
-			# data.extend([y,mo,d,h,m,weekday])
 
 
 

@@ -5,8 +5,11 @@ import shapefile
 import random,dill
 import numpy as np
 
+## Number of weekdays in dataset
 weekday_counts = [52.,53.,52.,52.,52.,52.,52.]
 
+
+####### Load Data
 try:
 	taxi_volume = dill.load(open('../../data/volume_by_region.p','rb'))
 except:
@@ -22,13 +25,17 @@ except:
 
 taxi_volume = taxi_volume.astype(float)
 
+### Normalize by number of weekdays
 for day in range(7):
 	taxi_volume[day,:,:,:] = 1.*taxi_volume[day,:,:,:]/weekday_counts[day]
 
 print taxi_volume.shape
 
-output = {"type":"FeatureCollection","features":[]}
 
+
+########## Create datafile for prototype
+
+output = {"type":"FeatureCollection","features":[]}
 
 sf = shapefile.Reader("../../maps/generated/neighborhoods.shp")
 
