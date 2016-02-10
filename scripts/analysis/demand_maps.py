@@ -20,8 +20,10 @@ except:
 	dill.dump(taxi_volume,open('../../data/volume_by_region.p','wb'))
 
 
+taxi_volume = taxi_volume.astype(float)
+
 for day in range(7):
-	taxi_volume[day,:,:,:] = taxi_volume[day,:,:,:]/weekday_counts[day]
+	taxi_volume[day,:,:,:] = 1.*taxi_volume[day,:,:,:]/weekday_counts[day]
 
 print taxi_volume.shape
 
@@ -46,8 +48,16 @@ while True:
 		d['id'] = k
 
 		d['properties']['data'] = {}
+
+		d['properties']['data']['pickups'] = [list(l) for l in np.sum(taxi_volume[:,:,k,:],axis=2)]
+		d['properties']['data']['dropoffs'] = [list(l) for l in np.sum(taxi_volume[:,:,:,k],axis=2)]
+		print [list(l) for l in np.sum(taxi_volume[:,:,k,:],axis=2)]
+		print [list(l) for l in np.sum(taxi_volume[:,:,:,k],axis=2)]
+		sys.exit()
 		for di,departure_hood in enumerate(hoods):
-			d['properties']['data'][departure_hood] = np.sum(taxi_volume[:5,6:,k,di])/5./18.
+			# print [list(l) for l in taxi_volume[:,:,k,di]]
+			# sys.exit()
+			d['properties']['data'][departure_hood] = [list(l) for l in taxi_volume[:,:,k,di]]
 			all_data.append(np.sum(taxi_volume[:5,6:,k,di])/5./18.)
 		d['properties']['name'] = hoods[k]
 		# d['properties']['data'] = np.sum(taxi_volume[:,:,k,:])/24./7.
